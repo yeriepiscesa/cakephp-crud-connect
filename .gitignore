@@ -1,0 +1,16 @@
+# Composer
+/vendor/
+
+# IDE / editor
+.vscode/
+.idea/
+*.sublime-*
+
+# OS
+.DS_Store
+Thumbs.db
+.directory
+
+# Environment / secrets
+.env
+.env.*
