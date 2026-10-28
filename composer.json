@@ -10,7 +10,7 @@
         "friendsofcake"
     ],
     "require": {
-        "php": ">=8.5",
+        "php": ">=8.4",
         "cakephp/cakephp": "^5.3",
         "friendsofcake/crud": "^7.2",
         "friendsofcake/search": "^7.7"
