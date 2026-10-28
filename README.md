@@ -44,3 +44,14 @@ Load in `config/plugins.php`:
 'Crud' => [],
 'Search' => [],
 ```
+
+## Form redirects
+
+When Uikit is loaded, the shared CRUD add/edit success redirects read
+`Uikit.form_add_redirect` (`add`, `edit`, `index`) and
+`Uikit.form_edit_redirect` (`stay`, `index`). Form templates may submit the
+protected `_uikit_form_redirect` field via Uikit's `crud_buttons` element.
+Unsupported values fall back to the default. The list return URL is stored per
+plugin, prefix and controller, and only accepts a same-origin referrer pointing
+to that controller's index. Search, filter and pagination query parameters are
+retained. Authorization and validation remain on the normal CRUD action.

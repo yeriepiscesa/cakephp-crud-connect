@@ -3,7 +3,12 @@ declare(strict_types=1);
 
 namespace CrudConnect\Controller;
 
+use Cake\Core\Configure;
+use Cake\Core\Plugin;
 use Cake\Event\EventInterface;
+use Cake\Routing\Router;
+use Crud\Controller\ControllerTrait;
+use CrudConnect\Navigation\FormRedirect;
 
 /**
  * Base controller for CRUD operations using Crud plugin.
@@ -12,9 +17,11 @@ use Cake\Event\EventInterface;
  */
 class CrudController extends AppController
 {
-    use \Crud\Controller\ControllerTrait;
+    use ControllerTrait;
 
-    /** @var array<int, string> */
+    /**
+     * @var array<int, string>
+     */
     protected array $sortableFields = [];
 
     protected string $lookupTemplatePath = 'Admin/Lookup';
@@ -25,7 +32,9 @@ class CrudController extends AppController
 
     protected int $limitPerLookup = 10;
 
-    /** @var array<int, string> */
+    /**
+     * @var array<int, string>
+     */
     protected array $actions = [
         'Crud.Index',
         'Crud.Lookup',
@@ -35,7 +44,9 @@ class CrudController extends AppController
         'Crud.Delete',
     ];
 
-    /** @var array<string, mixed> */
+    /**
+     * @var array<string, mixed>
+     */
     protected array $crudConfigs = [];
 
     /**
@@ -64,38 +75,34 @@ class CrudController extends AppController
 
         $request = $this->request;
         $action = $request->getParam('action');
-        $controllerName = $request->getParam('controller');
-
-        $this->Crud->on('beforePaginate', function (EventInterface $event): void {
-            $paginate = [
-                'limit' => $this->limitPerPage,
-            ];
-            if (!empty($this->sortableFields)) {
-                $paginate['sortableFields'] = $this->sortableFields;
-            }
-            $this->paginate = $paginate;
-        });
-
-        $this->Crud->on('beforeRender', function (EventInterface $event) use ($request, $action, $controllerName): void {
-            if (in_array($action, ['edit', 'add'], true)) {
-                $referer = $request->referer(true);
-                if ($referer && !str_contains($referer, '/edit') && !str_contains($referer, '/add')) {
-                    $request->getSession()->write($controllerName . '.returnUrl', $referer);
+        $sessionKey = 'CrudConnect.returnUrl.' . implode('.', array_map(
+            static fn($part) => str_replace('.', '_', (string)$part),
+            [$request->getParam('plugin'), $request->getParam('prefix'), $request->getParam('controller')],
+        ));
+        $this->Crud->on('beforeRender', function (EventInterface $event) use ($request, $action, $sessionKey): void {
+            if (in_array($action, ['edit', 'add'], true) && $request->is('get')) {
+                $indexUrl = Router::url(['action' => 'index']);
+                $referer = FormRedirect::listingReferrer($request->referer(true), $indexUrl);
+                if ($referer !== null) {
+                    $request->getSession()->write($sessionKey, $referer);
                 }
             }
-            $this->set('returnUrl', $request->getSession()->read($controllerName . '.returnUrl') ?? ['prefix' => 'Admin', 'action' => 'index']);
+            $this->set('returnUrl', $request->getSession()->read($sessionKey) ?? ['action' => 'index']);
         });
 
-        $this->Crud->on('beforeRedirect', function (EventInterface $event) use ($request, $action, $controllerName): void {
+        $this->Crud->on('beforeRedirect', function (EventInterface $event) use ($request, $action, $sessionKey): void {
             $subject = $event->getSubject();
-
-            if (in_array($action, ['add', 'edit'], true)) {
-                $returnUrl = $request->getSession()->read($controllerName . '.returnUrl');
-                if ($returnUrl) {
-                    $subject->url = $returnUrl;
-                    $request->getSession()->delete($controllerName . '.returnUrl');
-                }
+            if (!in_array($action, ['add', 'edit'], true) || empty($subject->success)) {
+                return;
             }
+            $default = $action === 'edit' ? 'stay' : 'add';
+            $mode = Plugin::isLoaded('Uikit')
+                ? ($request->getData('_uikit_form_redirect')
+                    ?? Configure::read('Uikit.form_' . $action . '_redirect', $default))
+                : 'index';
+            $id = isset($subject->entity) ? $subject->entity->get('id') : null;
+            $returnUrl = $request->getSession()->read($sessionKey) ?? ['action' => 'index'];
+            $subject->url = FormRedirect::target($action, $mode, $id, $returnUrl);
         });
     }
 
