@@ -54,7 +54,9 @@ protected `_uikit_form_redirect` field via Uikit's `crud_buttons` element.
 Unsupported values fall back to the default. The list return URL is stored per
 plugin, prefix and controller, and only accepts a same-origin referrer pointing
 to that controller's index. Search, filter and pagination query parameters are
-retained. Authorization and validation remain on the normal CRUD action.
+retained. View pages also remember a listing referrer, and Uikit's view actions
+use it for the back-to-list link. Authorization and validation remain on the
+normal CRUD action.
 
 ## Listing search and filters
 

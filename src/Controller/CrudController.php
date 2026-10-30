@@ -80,7 +80,7 @@ class CrudController extends AppController
             [$request->getParam('plugin'), $request->getParam('prefix'), $request->getParam('controller')],
         ));
         $this->Crud->on('beforeRender', function (EventInterface $event) use ($request, $action, $sessionKey): void {
-            if (in_array($action, ['edit', 'add'], true) && $request->is('get')) {
+            if (in_array($action, ['view', 'edit', 'add'], true) && $request->is('get')) {
                 $indexUrl = Router::url(['action' => 'index']);
                 $referer = FormRedirect::listingReferrer($request->referer(true), $indexUrl);
                 if ($referer !== null) {
